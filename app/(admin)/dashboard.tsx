@@ -25,6 +25,7 @@ export default function AdminDashboard() {
   const [refreshing, setRefreshing] = useState<boolean>(false);
   const [isSimulation, setIsSimulation] = useState<boolean>(true);
   const [updating, setUpdating] = useState<boolean>(false);
+  const [disputes, setDisputes] = useState<any[]>([]);
 
   const fetchStats = async () => {
     try {
@@ -34,11 +35,35 @@ export default function AdminDashboard() {
         setStats(data.stats);
         setIsSimulation(!!data.stats.isSimulationMode);
       }
+
+      // Fetch disputes list
+      const dispRes = await fetch(`${BACKEND_URL}/api/disputes`);
+      const dispData = await dispRes.json();
+      if (dispData.success && dispData.disputes) {
+        setDisputes(dispData.disputes);
+      }
     } catch (err) {
       console.error("Erreur chargement stats admin:", err);
     } finally {
       setLoading(false);
       setRefreshing(false);
+    }
+  };
+
+  const handleUpdateDisputeStatus = async (disputeId: number, newStatus: string) => {
+    try {
+      const res = await fetch(`${BACKEND_URL}/api/disputes/${disputeId}/status`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: newStatus }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        Alert.alert("Statut Mis à Jour", `Litige #${disputeId} marqué '${newStatus}'.`);
+        fetchStats();
+      }
+    } catch (err) {
+      Alert.alert("Erreur", "Impossible de mettre à jour le litige.");
     }
   };
 
@@ -246,6 +271,76 @@ export default function AdminDashboard() {
               <Text style={styles.actionCardSub}>Tableau de bord chauffeur</Text>
             </TouchableOpacity>
           </View>
+
+          {/* Section Litiges de Courses */}
+          <Text style={styles.sectionTitle}>
+            Litiges de Courses (Table ride_disputes - {disputes.length})
+          </Text>
+          {disputes.length === 0 ? (
+            <View style={styles.emptyDisputesBox}>
+              <Text style={styles.emptyDisputesText}>
+                Aucun litige signalé pour le moment.
+              </Text>
+            </View>
+          ) : (
+            <View style={styles.disputesList}>
+              {disputes.map((d: any) => (
+                <View key={d.id} style={styles.disputeItemCard}>
+                  <View style={styles.disputeItemHeader}>
+                    <Text style={styles.disputeItemTitle}>
+                      Litige #{d.id} — {d.ride_id}
+                    </Text>
+                    <View
+                      style={[
+                        styles.disputeStatusBadge,
+                        d.status === "RESOLU" && { backgroundColor: "#DCFCE7", borderColor: "#86EFAC" },
+                        d.status === "REJETE" && { backgroundColor: "#F3F4F6", borderColor: "#E5E7EB" },
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.disputeStatusText,
+                          d.status === "RESOLU" && { color: "#166534" },
+                          d.status === "REJETE" && { color: "#4B5563" },
+                        ]}
+                      >
+                        {d.status}
+                      </Text>
+                    </View>
+                  </View>
+
+                  <Text style={styles.disputeReasonText}>
+                    Motif : "{d.reason}"
+                  </Text>
+                  <Text style={styles.disputeMetaText}>
+                    Passager : {d.rider_name || d.rider_id || "Passager"} • Chauffeur : {d.driver_name || `Chauffeur #${d.driver_id}` || "Chauffeur"}
+                  </Text>
+                  <Text style={styles.disputeMetaText}>
+                    Montant : {d.fare_fcfa || 0} FCFA • Date : {new Date(d.created_at).toLocaleTimeString()}
+                  </Text>
+
+                  {d.status === "A_TRAITER" && (
+                    <View style={styles.disputeActionsRow}>
+                      <TouchableOpacity
+                        style={styles.resolveBtn}
+                        onPress={() => handleUpdateDisputeStatus(d.id, "RESOLU")}
+                        activeOpacity={0.8}
+                      >
+                        <Text style={styles.resolveBtnText}>Marquer Résolu</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={styles.rejectBtn}
+                        onPress={() => handleUpdateDisputeStatus(d.id, "REJETE")}
+                        activeOpacity={0.8}
+                      >
+                        <Text style={styles.rejectBtnText}>Rejeter</Text>
+                      </TouchableOpacity>
+                    </View>
+                  )}
+                </View>
+              ))}
+            </View>
+          )}
 
           {/* Security Notice */}
           <View style={styles.securityNotice}>
@@ -482,11 +577,100 @@ const styles = StyleSheet.create({
     padding: 16,
     borderWidth: 1,
     borderColor: "#334155",
+    marginTop: 20,
   },
   securityNoticeText: {
     fontSize: 12,
-    color: "#475569",
-    lineHeight: 18,
+    color: "#64748B",
     textAlign: "center",
+    lineHeight: 18,
+  },
+  // Disputes Table Styles
+  emptyDisputesBox: {
+    backgroundColor: "#1E293B",
+    padding: 20,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "#334155",
+    marginBottom: 20,
+    alignItems: "center",
+  },
+  emptyDisputesText: {
+    color: "#64748B",
+    fontSize: 13,
+    fontWeight: "500",
+  },
+  disputesList: {
+    gap: 12,
+    marginBottom: 20,
+  },
+  disputeItemCard: {
+    backgroundColor: "#1E293B",
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: "#334155",
+  },
+  disputeItemHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 8,
+  },
+  disputeItemTitle: {
+    fontSize: 14,
+    fontWeight: "800",
+    color: "#F1F5F9",
+  },
+  disputeStatusBadge: {
+    backgroundColor: "#FEF2F2",
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#FCA5A5",
+  },
+  disputeStatusText: {
+    fontSize: 11,
+    fontWeight: "800",
+    color: "#DC2626",
+  },
+  disputeReasonText: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: "#F87171",
+    marginBottom: 6,
+  },
+  disputeMetaText: {
+    fontSize: 12,
+    color: "#94A3B8",
+    marginBottom: 2,
+  },
+  disputeActionsRow: {
+    flexDirection: "row",
+    gap: 10,
+    marginTop: 12,
+  },
+  resolveBtn: {
+    backgroundColor: "#10B981",
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 10,
+  },
+  resolveBtnText: {
+    color: "#FFFFFF",
+    fontSize: 12,
+    fontWeight: "700",
+  },
+  rejectBtn: {
+    backgroundColor: "#334155",
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 10,
+  },
+  rejectBtnText: {
+    color: "#94A3B8",
+    fontSize: 12,
+    fontWeight: "700",
   },
 });

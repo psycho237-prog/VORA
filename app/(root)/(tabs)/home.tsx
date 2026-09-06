@@ -3,6 +3,9 @@ import * as Location from "expo-location";
 import { router } from "expo-router";
 import { useState, useEffect } from "react";
 import {
+  Alert,
+  Modal,
+  TextInput,
   Text,
   View,
   TouchableOpacity,
@@ -22,6 +25,7 @@ import { icons, images } from "@/constants";
 import { useFetch } from "@/lib/fetch";
 import { useLocationStore } from "@/store";
 import { Ride } from "@/types/type";
+import { voraSocket } from "@/lib/socket";
 
 const { height: SCREEN_HEIGHT } = Dimensions.get("window");
 
@@ -75,8 +79,72 @@ const Home = () => {
     address: string;
   }) => {
     setDestinationLocation(location);
-
     router.push("/(root)/find-ride");
+  };
+
+  // Socket listener for end-ride confirmation modal
+  const [arrivalRide, setArrivalRide] = useState<any>(null);
+  const [showArrivalModal, setShowArrivalModal] = useState(false);
+  const [showDisputeModal, setShowDisputeModal] = useState(false);
+  const [disputeReason, setDisputeReason] = useState("");
+  const [rating, setRating] = useState(5);
+
+  useEffect(() => {
+    const socket = voraSocket.connect(user?.id || "rider_demo", "PASSENGER");
+
+    socket?.on("arrival-declared", (data: any) => {
+      setArrivalRide(data.ride);
+      setShowArrivalModal(true);
+    });
+
+    socket?.on("ride-completed-mutual", (data: any) => {
+      setShowArrivalModal(false);
+      setShowDisputeModal(false);
+      const autoMsg = data.autoConfirmed
+        ? " (Confirmation automatique après délai de 5 min)"
+        : "";
+      Alert.alert(
+        "Course Terminée !",
+        `Merci d'avoir voyagé avec VORA ! Votre reçu de paiement a été généré.${autoMsg}`
+      );
+    });
+
+    socket?.on("ride-disputed", () => {
+      setShowArrivalModal(false);
+      setShowDisputeModal(false);
+      Alert.alert(
+        "Litige Enregistré",
+        "Votre réclamation a été transmise à notre service d'arbitrage VORA. Le paiement automatique a été suspendu."
+      );
+    });
+
+    return () => {
+      socket?.off("arrival-declared");
+      socket?.off("ride-completed-mutual");
+      socket?.off("ride-disputed");
+    };
+  }, [user]);
+
+  const handleConfirmEndRide = () => {
+    if (arrivalRide?.id) {
+      voraSocket.confirmRideEnd(arrivalRide.id, rating);
+      setShowArrivalModal(false);
+    }
+  };
+
+  const handleSendDispute = () => {
+    if (!disputeReason.trim()) {
+      Alert.alert("Précisez le problème", "Veuillez indiquer brièvement la raison de votre litige.");
+      return;
+    }
+    voraSocket.disputeRide(
+      arrivalRide?.id || "VORA-DEMO",
+      user?.id || "rider_demo",
+      arrivalRide?.driver_id || 1,
+      disputeReason
+    );
+    setShowDisputeModal(false);
+    setDisputeReason("");
   };
 
   return (
@@ -147,6 +215,106 @@ const Home = () => {
           </View>
         }
       />
+
+      {/* Modal Confirmation de Fin de Course */}
+      <Modal
+        visible={showArrivalModal && !showDisputeModal}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowArrivalModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalBadgeHeader}>
+              <Text style={styles.modalBadgeText}>FIN DE COURSE VORA</Text>
+            </View>
+            <Text style={styles.modalTitle}>Chauffeur Arrivé à Destination</Text>
+            <Text style={styles.modalSub}>
+              Votre chauffeur indique être arrivé à destination. Confirmez-vous la fin de la course pour effectuer le paiement de {arrivalRide?.fare_fcfa || 1750} FCFA ?
+            </Text>
+
+            {/* Évaluation */}
+            <Text style={styles.rateLabel}>Noter votre course :</Text>
+            <View style={styles.starRow}>
+              {[1, 2, 3, 4, 5].map((s) => (
+                <TouchableOpacity
+                  key={s}
+                  onPress={() => setRating(s)}
+                  style={{ padding: 4 }}
+                >
+                  <Text style={{ fontSize: 26, color: s <= rating ? "#F59E0B" : "#CBD5E1" }}>
+                    ★
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            <TouchableOpacity
+              onPress={handleConfirmEndRide}
+              style={styles.confirmEndBtn}
+              activeOpacity={0.85}
+            >
+              <Text style={styles.confirmEndBtnText}>
+                Confirmer la fin de la course
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              onPress={() => setShowDisputeModal(true)}
+              style={styles.disputeTriggerBtn}
+              activeOpacity={0.85}
+            >
+              <Text style={styles.disputeTriggerText}>
+                Signaler un problème
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Modal Formulaire de Litige */}
+      <Modal
+        visible={showDisputeModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowDisputeModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalDisputeTitle}>Signaler un Problème</Text>
+            <Text style={styles.modalSub}>
+              Veuillez préciser le motif de votre litige. Le paiement sera immédiatement bloqué et soumis à l'arbitrage VORA :
+            </Text>
+
+            <TextInput
+              style={styles.disputeInput}
+              placeholder="Ex: Le chauffeur s'est arrêté trop loin de la destination, comportement inapproprié..."
+              multiline
+              numberOfLines={4}
+              value={disputeReason}
+              onChangeText={setDisputeReason}
+            />
+
+            <TouchableOpacity
+              onPress={handleSendDispute}
+              style={styles.sendDisputeBtn}
+              activeOpacity={0.85}
+            >
+              <Text style={styles.sendDisputeText}>
+                Envoyer la Réclamation
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              onPress={() => setShowDisputeModal(false)}
+              style={styles.cancelDisputeBtn}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.cancelDisputeText}>Retour</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -235,5 +403,124 @@ const styles = StyleSheet.create({
     color: "#64748b",
     fontWeight: "500",
     marginTop: 12,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(15, 23, 42, 0.65)",
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 20,
+  },
+  modalContent: {
+    width: "100%",
+    maxWidth: 480,
+    backgroundColor: "#ffffff",
+    borderRadius: 24,
+    padding: 24,
+    boxShadow: "0px 10px 30px rgba(0, 0, 0, 0.2)",
+    elevation: 8,
+  },
+  modalBadgeHeader: {
+    alignSelf: "flex-start",
+    backgroundColor: "#E0F2FE",
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: "#BAE6FD",
+  },
+  modalBadgeText: {
+    fontSize: 11,
+    fontWeight: "800",
+    color: "#0284C7",
+    letterSpacing: 0.5,
+  },
+  modalTitle: {
+    fontSize: 22,
+    fontWeight: "800",
+    color: "#0F172A",
+    marginBottom: 8,
+  },
+  modalDisputeTitle: {
+    fontSize: 22,
+    fontWeight: "800",
+    color: "#DC2626",
+    marginBottom: 8,
+  },
+  modalSub: {
+    fontSize: 14,
+    color: "#475569",
+    lineHeight: 20,
+    marginBottom: 16,
+  },
+  rateLabel: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: "#64748B",
+    marginBottom: 4,
+  },
+  starRow: {
+    flexDirection: "row",
+    marginBottom: 20,
+  },
+  confirmEndBtn: {
+    backgroundColor: "#10B981",
+    paddingVertical: 15,
+    borderRadius: 16,
+    alignItems: "center",
+    marginBottom: 10,
+    elevation: 3,
+  },
+  confirmEndBtnText: {
+    color: "#FFFFFF",
+    fontSize: 16,
+    fontWeight: "800",
+  },
+  disputeTriggerBtn: {
+    backgroundColor: "#FEF2F2",
+    borderWidth: 1.5,
+    borderColor: "#FCA5A5",
+    paddingVertical: 13,
+    borderRadius: 16,
+    alignItems: "center",
+  },
+  disputeTriggerText: {
+    color: "#DC2626",
+    fontSize: 14,
+    fontWeight: "700",
+  },
+  disputeInput: {
+    backgroundColor: "#F8FAFC",
+    borderWidth: 1,
+    borderColor: "#CBD5E1",
+    borderRadius: 16,
+    padding: 14,
+    fontSize: 14,
+    color: "#0F172A",
+    textAlignVertical: "top",
+    marginBottom: 16,
+    height: 100,
+  },
+  sendDisputeBtn: {
+    backgroundColor: "#DC2626",
+    paddingVertical: 15,
+    borderRadius: 16,
+    alignItems: "center",
+    marginBottom: 10,
+  },
+  sendDisputeText: {
+    color: "#FFFFFF",
+    fontSize: 15,
+    fontWeight: "800",
+  },
+  cancelDisputeBtn: {
+    paddingVertical: 12,
+    alignItems: "center",
+  },
+  cancelDisputeText: {
+    color: "#64748B",
+    fontSize: 14,
+    fontWeight: "700",
   },
 });
