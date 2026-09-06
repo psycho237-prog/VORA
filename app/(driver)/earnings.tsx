@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   ScrollView,
   StyleSheet,
@@ -8,19 +8,44 @@ import {
   View,
 } from "react-native";
 import { router } from "expo-router";
+import { useClerkUser } from "@/lib/useClerkSafe";
 
 export default function DriverEarnings() {
+  const { user } = useClerkUser();
   const [period, setPeriod] = useState<"day" | "week" | "month">("day");
   const { width } = useWindowDimensions();
   const isWide = width >= 768;
 
-  const earningsData = {
-    day: { amount: 18500, ridesCount: 8, hoursOnline: 6.5, avgPerRide: 2312 },
-    week: { amount: 112000, ridesCount: 46, hoursOnline: 38, avgPerRide: 2434 },
-    month: { amount: 480000, ridesCount: 194, hoursOnline: 152, avgPerRide: 2474 },
-  };
+  const [earningsData, setEarningsData] = useState<any>({
+    day: { amount: 0, ridesCount: 0, hoursOnline: 0, avgPerRide: 0 },
+    week: { amount: 0, ridesCount: 0, hoursOnline: 0, avgPerRide: 0 },
+    month: { amount: 0, ridesCount: 0, hoursOnline: 0, avgPerRide: 0 },
+  });
 
-  const current = earningsData[period];
+  useEffect(() => {
+    const fetchEarnings = async () => {
+      try {
+        const backendUrl =
+          process.env.EXPO_PUBLIC_BACKEND_URL || "http://localhost:5000";
+        const userId = user?.id || "driver_demo";
+        const res = await fetch(`${backendUrl}/api/drivers/earnings/${userId}`);
+        const data = await res.json();
+        if (data.success && data.earnings) {
+          setEarningsData(data.earnings);
+        }
+      } catch (err) {
+        console.error("Erreur lors de la récupération des revenus:", err);
+      }
+    };
+    fetchEarnings();
+  }, [user]);
+
+  const current = earningsData[period] || {
+    amount: 0,
+    ridesCount: 0,
+    hoursOnline: 0,
+    avgPerRide: 0,
+  };
 
   return (
     <ScrollView
