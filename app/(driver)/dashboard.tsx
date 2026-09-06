@@ -18,8 +18,8 @@ export default function DriverDashboard() {
   const [isOnline, setIsOnline] = useState(false);
   const [driverProfile, setDriverProfile] = useState<any>(null);
   const [currentLocation, setCurrentLocation] = useState<any>(null);
-  const [todayEarnings, setTodayEarnings] = useState(14500); // FCFA exemple
-  const [todayRidesCount, setTodayRidesCount] = useState(6);
+  const [todayEarnings, setTodayEarnings] = useState(0);
+  const [todayRidesCount, setTodayRidesCount] = useState(0);
 
   // Charger le profil chauffeur
   useEffect(() => {
@@ -31,9 +31,15 @@ export default function DriverDashboard() {
           `${backendUrl}/api/drivers/profile/${user?.id || "driver_demo"}`
         );
         const data = await res.json();
-        if (data.success) {
+        if (data.success && data.driver) {
           setDriverProfile(data.driver);
-          setIsOnline(data.driver.is_online);
+          setIsOnline(!!data.driver.is_online);
+          if (data.driver.today_earnings !== undefined) {
+            setTodayEarnings(data.driver.today_earnings);
+          }
+          if (data.driver.today_rides_count !== undefined) {
+            setTodayRidesCount(data.driver.today_rides_count);
+          }
         }
       } catch (err) {
         console.error("Erreur profil chauffeur:", err);
@@ -132,12 +138,12 @@ export default function DriverDashboard() {
           <View style={styles.headerTextGroup}>
             <Text style={styles.headerTag}>CHAUFFEUR VORA</Text>
             <Text style={styles.headerName}>
-              {user?.fullName || "Gregoire Legrand"}
+              {user?.fullName || user?.firstName || "Chauffeur VORA"}
             </Text>
             <Text style={styles.headerVehicle}>
-              {driverProfile
+              {driverProfile?.vehicle_model
                 ? `${driverProfile.vehicle_model} (${driverProfile.license_plate})`
-                : "Toyota Yaris (LT 482-CE)"}
+                : "Véhicule non configuré"}
             </Text>
           </View>
           <TouchableOpacity

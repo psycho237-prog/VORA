@@ -46,6 +46,17 @@ const Profile = () => {
     Alert.alert("Photo mise à jour", "Votre photo de profil VORA a été modifiée avec succès.");
   };
 
+  const [adminTapCount, setAdminTapCount] = useState(0);
+
+  const handleAdminTap = () => {
+    const next = adminTapCount + 1;
+    setAdminTapCount(next);
+    if (next >= 5) {
+      setAdminTapCount(0);
+      router.push("/(admin)/login" as any);
+    }
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView
@@ -57,7 +68,9 @@ const Profile = () => {
       >
         {/* Top title & mode badge */}
         <View style={styles.headerRow}>
-          <Text style={styles.title}>Mon Profil VORA</Text>
+          <TouchableOpacity onPress={handleAdminTap} activeOpacity={1}>
+            <Text style={styles.title}>Mon Profil VORA</Text>
+          </TouchableOpacity>
           <TouchableOpacity
             style={styles.driverBadge}
             onPress={() => router.push("/(driver)/dashboard" as any)}

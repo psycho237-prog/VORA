@@ -1,14 +1,25 @@
 import React, { useEffect, useState } from "react";
-import { Alert, Text, TouchableOpacity, View } from "react-native";
+import {
+  ActivityIndicator,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  useWindowDimensions,
+  View,
+} from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 
 import { voraSocket } from "@/lib/socket";
 
 export default function DriverRideRequest() {
+  const { width } = useWindowDimensions();
+  const isWide = width >= 768;
   const { rideData } = useLocalSearchParams();
+
   const [ride, setRide] = useState<any>(null);
   const [timeLeft, setTimeLeft] = useState(30);
 
+  // Parse payload parameter safely
   useEffect(() => {
     if (rideData) {
       try {
@@ -18,12 +29,23 @@ export default function DriverRideRequest() {
           setRide(JSON.parse(rideData));
         }
       } catch (err) {
-        console.error("Erreur parse rideData:", err);
+        console.error("Erreur parsing rideData:", err);
       }
+    } else {
+      // Fallback demo simulation data to prevent blank screen
+      setRide({
+        id: `VORA-DEMO-${Date.now()}`,
+        rider_name: "Passager Test",
+        origin_address: "Carrefour Mokolo, Yaoundé",
+        destination_address: "Quartier Bastos, Yaoundé",
+        fare_fcfa: 1750,
+        vehicle_type: "taxi",
+        multiplier: 1.2,
+      });
     }
   }, [rideData]);
 
-  // Compte à rebours 30 secondes pour accepter
+  // 30s countdown timer
   useEffect(() => {
     if (timeLeft <= 0) {
       router.back();
@@ -39,7 +61,7 @@ export default function DriverRideRequest() {
 
   const handleAccept = () => {
     if (!ride) return;
-    voraSocket.acceptRide(ride.id, 1); // 1 = driverId par défaut ou dynamique
+    voraSocket.acceptRide(ride.id, 1);
     router.replace({
       pathname: "/(driver)/navigation" as any,
       params: { rideId: ride.id, rideData: JSON.stringify(ride) },
@@ -50,83 +72,235 @@ export default function DriverRideRequest() {
     router.back();
   };
 
-  if (!ride) return null;
+  // Safe fallback component if loading
+  if (!ride) {
+    return (
+      <View style={styles.backdrop}>
+        <View style={styles.loadingCard}>
+          <ActivityIndicator size="large" color="#0EA5E9" />
+          <Text style={styles.loadingText}>Chargement de la demande...</Text>
+        </View>
+      </View>
+    );
+  }
 
   return (
-    <View className="flex-1 bg-slate-900/80 justify-end p-5">
-      <View
-        style={{
-          backgroundColor: "rgba(255, 255, 255, 0.96)",
-          borderRadius: 24,
-          borderWidth: 1.5,
-          borderColor: "rgba(14, 165, 233, 0.5)",
-          padding: 24,
-          shadowColor: "#0EA5E9",
-          shadowOffset: { width: 0, height: 10 },
-          shadowOpacity: 0.25,
-          shadowRadius: 20,
-          elevation: 10,
-        }}
-      >
+    <View style={styles.backdrop}>
+      <View style={[styles.modalCard, isWide && styles.modalCardWide]}>
         {/* Header timer */}
-        <View className="flex-row items-center justify-between mb-4">
-          <View className="bg-sky-100 px-3 py-1 rounded-full border border-sky-300">
-            <Text className="text-primary-700 font-JakartaExtraBold text-xs">
-              Nouvelle Demande de Course
-            </Text>
+        <View style={styles.headerRow}>
+          <View style={styles.badgeNew}>
+            <Text style={styles.badgeNewText}>Demande de Course VORA</Text>
           </View>
-          <View className="w-10 h-10 rounded-full bg-red-100 items-center justify-center border border-red-200">
-            <Text className="text-red-600 font-JakartaExtraBold text-sm">{timeLeft}s</Text>
+          <View style={styles.timerCircle}>
+            <Text style={styles.timerText}>{timeLeft}s</Text>
           </View>
         </View>
 
-        {/* Tarif FCFA */}
-        <View className="mb-5 bg-sky-50 p-4 rounded-2xl border border-sky-100">
-          <Text className="text-xs text-slate-400 font-JakartaBold uppercase">Montant de la Course</Text>
-          <Text className="text-3xl font-JakartaExtraBold text-primary-600 mt-0.5">
-            {ride.fare_fcfa} FCFA
+        {/* Fare FCFA */}
+        <View style={styles.fareBox}>
+          <Text style={styles.fareLabel}>TARIF PROPOSÉ</Text>
+          <Text style={styles.fareAmount}>
+            {(ride.fare_fcfa || 1500).toLocaleString()} FCFA
           </Text>
           {ride.multiplier > 1.0 && (
-            <Text className="text-xs text-amber-700 font-JakartaBold mt-1">
-              Tarif Majoré (x{ride.multiplier})
+            <Text style={styles.multiplierText}>
+              Tarif Heure de Pointe (x{ride.multiplier})
             </Text>
           )}
         </View>
 
-        {/* Adresses Départ & Arrivée */}
-        <View className="space-y-3 mb-6">
-          <View>
-            <Text className="text-[11px] font-JakartaBold text-slate-400 uppercase">Lieu de Prise en Charge</Text>
-            <Text className="text-base font-JakartaBold text-slate-800 mt-0.5">
-              {ride.origin_address}
+        {/* Addresses */}
+        <View style={styles.addressSection}>
+          <View style={styles.addressBlock}>
+            <Text style={styles.addressLabel}>PRISE EN CHARGE</Text>
+            <Text style={styles.addressText}>
+              {ride.origin_address || "Carrefour Mokolo, Yaoundé"}
             </Text>
           </View>
 
-          <View className="border-t border-slate-100 pt-2">
-            <Text className="text-[11px] font-JakartaBold text-slate-400 uppercase">Destination</Text>
-            <Text className="text-base font-JakartaBold text-slate-800 mt-0.5">
-              {ride.destination_address}
+          <View style={styles.divider} />
+
+          <View style={styles.addressBlock}>
+            <Text style={styles.addressLabel}>DESTINATION</Text>
+            <Text style={styles.addressText}>
+              {ride.destination_address || "Quartier Bastos, Yaoundé"}
             </Text>
           </View>
         </View>
 
-        {/* Boutons d'action */}
-        <View className="flex-row justify-between space-x-3">
+        {/* Action Buttons */}
+        <View style={styles.actionsRow}>
           <TouchableOpacity
             onPress={handleDecline}
-            className="flex-1 bg-slate-100 border border-slate-300 py-4 rounded-xl items-center"
+            style={styles.declineBtn}
+            activeOpacity={0.8}
           >
-            <Text className="text-slate-700 font-JakartaBold text-base">Refuser</Text>
+            <Text style={styles.declineBtnText}>Refuser</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
             onPress={handleAccept}
-            className="flex-1 bg-primary-500 py-4 rounded-xl items-center shadow-md shadow-sky-300"
+            style={styles.acceptBtn}
+            activeOpacity={0.85}
           >
-            <Text className="text-white font-JakartaExtraBold text-base">Accepter la Course</Text>
+            <Text style={styles.acceptBtnText}>Accepter la Course</Text>
           </TouchableOpacity>
         </View>
       </View>
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  backdrop: {
+    flex: 1,
+    backgroundColor: "rgba(15, 23, 42, 0.75)",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 20,
+  },
+  loadingCard: {
+    backgroundColor: "#ffffff",
+    borderRadius: 20,
+    padding: 32,
+    alignItems: "center",
+    gap: 16,
+  },
+  loadingText: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: "#64748B",
+  },
+  modalCard: {
+    width: "100%",
+    maxWidth: 480,
+    backgroundColor: "#ffffff",
+    borderRadius: 24,
+    padding: 24,
+    boxShadow: "0px 10px 30px rgba(0, 0, 0, 0.2)",
+    elevation: 10,
+  },
+  modalCardWide: {
+    maxWidth: 520,
+  },
+  headerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 20,
+  },
+  badgeNew: {
+    backgroundColor: "#E0F2FE",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: "#BAE6FD",
+  },
+  badgeNewText: {
+    fontSize: 12,
+    fontWeight: "800",
+    color: "#0284C7",
+    letterSpacing: 0.3,
+  },
+  timerCircle: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: "#FEE2E2",
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: "#FCA5A5",
+  },
+  timerText: {
+    fontSize: 14,
+    fontWeight: "800",
+    color: "#DC2626",
+  },
+  fareBox: {
+    backgroundColor: "#F0F9FF",
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: "#BAE6FD",
+  },
+  fareLabel: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: "#0369A1",
+    letterSpacing: 0.5,
+    marginBottom: 4,
+  },
+  fareAmount: {
+    fontSize: 28,
+    fontWeight: "900",
+    color: "#0284C7",
+  },
+  multiplierText: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#B45309",
+    marginTop: 4,
+  },
+  addressSection: {
+    backgroundColor: "#F8FAFC",
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 24,
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+    gap: 12,
+  },
+  addressBlock: {},
+  addressLabel: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: "#94A3B8",
+    letterSpacing: 0.5,
+    marginBottom: 2,
+  },
+  addressText: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: "#0F172A",
+  },
+  divider: {
+    height: 1,
+    backgroundColor: "#E2E8F0",
+  },
+  actionsRow: {
+    flexDirection: "row",
+    gap: 12,
+  },
+  declineBtn: {
+    flex: 1,
+    backgroundColor: "#F1F5F9",
+    borderRadius: 14,
+    paddingVertical: 14,
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#CBD5E1",
+  },
+  declineBtnText: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: "#475569",
+  },
+  acceptBtn: {
+    flex: 1.5,
+    backgroundColor: "#0EA5E9",
+    borderRadius: 14,
+    paddingVertical: 14,
+    alignItems: "center",
+    boxShadow: "0px 4px 12px rgba(14, 165, 233, 0.35)",
+    elevation: 4,
+  },
+  acceptBtnText: {
+    fontSize: 15,
+    fontWeight: "800",
+    color: "#ffffff",
+  },
+});
