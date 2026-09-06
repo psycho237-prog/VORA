@@ -98,6 +98,13 @@ const Profile = () => {
           <TouchableOpacity onPress={() => setShowAvatarModal(true)}>
             <Text style={styles.changePhotoText}>Changer ma photo de profil</Text>
           </TouchableOpacity>
+
+          {/* Badge ID Public Anonymisé */}
+          <View style={styles.publicIdBadge}>
+            <Text style={styles.publicIdBadgeText}>
+              ID PUBLIC SÉCURISÉ : {user?.id ? `VORA-${user.id.substring(user.id.length - 6).toUpperCase()}` : "VORA-8K3P9A"}
+            </Text>
+          </View>
         </View>
 
         {/* Main profile card */}
@@ -322,6 +329,21 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "600",
     color: PRIMARY,
+  },
+  publicIdBadge: {
+    marginTop: 10,
+    backgroundColor: "#F0F9FF",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: "#BAE6FD",
+  },
+  publicIdBadgeText: {
+    fontSize: 11,
+    fontWeight: "800",
+    color: "#0284C7",
+    letterSpacing: 0.5,
   },
   card: {
     backgroundColor: "#ffffff",
