@@ -1,9 +1,18 @@
 import React, { useState } from "react";
-import { ScrollView, Text, TouchableOpacity, View } from "react-native";
+import {
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  useWindowDimensions,
+  View,
+} from "react-native";
 import { router } from "expo-router";
 
 export default function DriverEarnings() {
   const [period, setPeriod] = useState<"day" | "week" | "month">("day");
+  const { width } = useWindowDimensions();
+  const isWide = width >= 768;
 
   const earningsData = {
     day: { amount: 18500, ridesCount: 8, hoursOnline: 6.5, avgPerRide: 2312 },
@@ -14,117 +23,260 @@ export default function DriverEarnings() {
   const current = earningsData[period];
 
   return (
-    <ScrollView className="flex-1 bg-slate-50">
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={[
+        styles.scroll,
+        isWide && { width: "100%", maxWidth: 1080, alignSelf: "center" },
+      ]}
+    >
       {/* Header Glass Sky Blue */}
-      <View className="bg-primary-600 p-6 pt-12 pb-8 rounded-b-3xl shadow-lg">
-        <TouchableOpacity onPress={() => router.back()} className="mb-4">
-          <Text className="text-sky-100 font-JakartaBold text-xs uppercase">
+      <View style={styles.header}>
+        <TouchableOpacity
+          onPress={() => router.back()}
+          style={styles.backBtn}
+          activeOpacity={0.8}
+        >
+          <Text style={styles.backBtnText}>
             ← Retour au Tableau de Bord
           </Text>
         </TouchableOpacity>
-        <Text className="text-white text-xs font-JakartaBold uppercase tracking-wider opacity-80">
-          Compte Chauffeur VORA
-        </Text>
-        <Text className="text-white text-3xl font-JakartaExtraBold mt-1">
-          Historique des Revenus
-        </Text>
+
+        <Text style={styles.headerTag}>COMPTE CHAUFFEUR VORA</Text>
+        <Text style={styles.headerTitle}>Historique des Revenus</Text>
       </View>
 
-      <View className="p-5">
+      <View style={styles.body}>
         {/* Selector Période */}
-        <View className="flex-row mb-6 bg-sky-50 p-1.5 rounded-xl border border-sky-100">
+        <View style={styles.periodSelector}>
           <TouchableOpacity
             onPress={() => setPeriod("day")}
-            className={`flex-1 py-2.5 rounded-lg items-center ${
-              period === "day" ? "bg-primary-500 shadow-sm" : "bg-transparent"
-            }`}
+            style={[
+              styles.periodBtn,
+              period === "day" && styles.periodBtnActive,
+            ]}
           >
-            <Text className={`font-JakartaBold ${period === "day" ? "text-white" : "text-slate-600"}`}>
+            <Text
+              style={[
+                styles.periodBtnText,
+                period === "day" && styles.periodBtnTextActive,
+              ]}
+            >
               Aujourd'hui
             </Text>
           </TouchableOpacity>
 
           <TouchableOpacity
             onPress={() => setPeriod("week")}
-            className={`flex-1 py-2.5 rounded-lg items-center ${
-              period === "week" ? "bg-primary-500 shadow-sm" : "bg-transparent"
-            }`}
+            style={[
+              styles.periodBtn,
+              period === "week" && styles.periodBtnActive,
+            ]}
           >
-            <Text className={`font-JakartaBold ${period === "week" ? "text-white" : "text-slate-600"}`}>
+            <Text
+              style={[
+                styles.periodBtnText,
+                period === "week" && styles.periodBtnTextActive,
+              ]}
+            >
               Cette Semaine
             </Text>
           </TouchableOpacity>
 
           <TouchableOpacity
             onPress={() => setPeriod("month")}
-            className={`flex-1 py-2.5 rounded-lg items-center ${
-              period === "month" ? "bg-primary-500 shadow-sm" : "bg-transparent"
-            }`}
+            style={[
+              styles.periodBtn,
+              period === "month" && styles.periodBtnActive,
+            ]}
           >
-            <Text className={`font-JakartaBold ${period === "month" ? "text-white" : "text-slate-600"}`}>
+            <Text
+              style={[
+                styles.periodBtnText,
+                period === "month" && styles.periodBtnTextActive,
+              ]}
+            >
               Ce Mois
             </Text>
           </TouchableOpacity>
         </View>
 
         {/* Big Glass Card Total */}
-        <View
-          style={{
-            backgroundColor: "rgba(255, 255, 255, 0.95)",
-            borderRadius: 24,
-            borderWidth: 1.5,
-            borderColor: "rgba(14, 165, 233, 0.4)",
-            padding: 24,
-            marginBottom: 20,
-            elevation: 6,
-            shadowColor: "#0EA5E9",
-            shadowOffset: { width: 0, height: 6 },
-            shadowOpacity: 0.12,
-            shadowRadius: 12,
-          }}
-        >
-          <Text className="text-xs text-slate-400 font-JakartaBold uppercase">
-            Total Net Encaissé
-          </Text>
-          <Text className="text-4xl font-JakartaExtraBold text-primary-600 mt-1">
+        <View style={styles.totalCard}>
+          <Text style={styles.totalCardLabel}>TOTAL NET ENCAISSÉ</Text>
+          <Text style={styles.totalCardValue}>
             {current.amount.toLocaleString()} FCFA
           </Text>
-          <Text className="text-xs text-emerald-600 font-JakartaBold mt-2">
+          <Text style={styles.totalCardSub}>
             Versement disponible via MTN / Orange Money / Espèces
           </Text>
         </View>
 
         {/* Détails Grille */}
-        <View className="flex-row flex-wrap justify-between">
-          <View className="w-[48%] bg-white p-4 rounded-2xl border border-slate-200 mb-4 shadow-sm">
-            <Text className="text-xs text-slate-400 font-JakartaBold uppercase">Courses Réalisées</Text>
-            <Text className="text-2xl font-JakartaExtraBold text-slate-800 mt-1">
-              {current.ridesCount}
-            </Text>
+        <View style={styles.grid}>
+          <View style={styles.gridCard}>
+            <Text style={styles.gridLabel}>COURSES RÉALISÉES</Text>
+            <Text style={styles.gridValue}>{current.ridesCount}</Text>
           </View>
 
-          <View className="w-[48%] bg-white p-4 rounded-2xl border border-slate-200 mb-4 shadow-sm">
-            <Text className="text-xs text-slate-400 font-JakartaBold uppercase">Heures en Ligne</Text>
-            <Text className="text-2xl font-JakartaExtraBold text-slate-800 mt-1">
-              {current.hoursOnline}h
-            </Text>
+          <View style={styles.gridCard}>
+            <Text style={styles.gridLabel}>HEURES EN LIGNE</Text>
+            <Text style={styles.gridValue}>{current.hoursOnline}h</Text>
           </View>
 
-          <View className="w-[48%] bg-white p-4 rounded-2xl border border-slate-200 mb-4 shadow-sm">
-            <Text className="text-xs text-slate-400 font-JakartaBold uppercase">Moyenne par Course</Text>
-            <Text className="text-xl font-JakartaExtraBold text-slate-800 mt-1">
-              {current.avgPerRide} FCFA
-            </Text>
+          <View style={styles.gridCard}>
+            <Text style={styles.gridLabel}>MOYENNE / COURSE</Text>
+            <Text style={styles.gridValue}>{current.avgPerRide} FCFA</Text>
           </View>
 
-          <View className="w-[48%] bg-white p-4 rounded-2xl border border-slate-200 mb-4 shadow-sm">
-            <Text className="text-xs text-slate-400 font-JakartaBold uppercase">Note Moyenne</Text>
-            <Text className="text-xl font-JakartaExtraBold text-amber-500 mt-1">
-              4.95 / 5
-            </Text>
+          <View style={styles.gridCard}>
+            <Text style={styles.gridLabel}>NOTE MOYENNE</Text>
+            <Text style={styles.gridValueAmber}>4.95 / 5</Text>
           </View>
         </View>
       </View>
     </ScrollView>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: "#F8FAFC",
+  },
+  scroll: {
+    paddingBottom: 40,
+  },
+  header: {
+    backgroundColor: "#0EA5E9",
+    paddingHorizontal: 24,
+    paddingTop: 48,
+    paddingBottom: 28,
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
+  },
+  backBtn: {
+    alignSelf: "flex-start",
+    backgroundColor: "rgba(255, 255, 255, 0.2)",
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 12,
+    marginBottom: 16,
+  },
+  backBtnText: {
+    color: "#FFFFFF",
+    fontSize: 12,
+    fontWeight: "700",
+  },
+  headerTag: {
+    color: "#E0F2FE",
+    fontSize: 12,
+    fontWeight: "700",
+    letterSpacing: 0.8,
+    textTransform: "uppercase",
+  },
+  headerTitle: {
+    color: "#FFFFFF",
+    fontSize: 26,
+    fontWeight: "800",
+    marginTop: 4,
+  },
+  body: {
+    paddingHorizontal: 20,
+    paddingTop: 24,
+  },
+  periodSelector: {
+    flexDirection: "row",
+    backgroundColor: "#F0F9FF",
+    borderRadius: 16,
+    padding: 4,
+    borderWidth: 1,
+    borderColor: "#BAE6FD",
+    marginBottom: 20,
+  },
+  periodBtn: {
+    flex: 1,
+    paddingVertical: 10,
+    borderRadius: 12,
+    alignItems: "center",
+  },
+  periodBtnActive: {
+    backgroundColor: "#0EA5E9",
+  },
+  periodBtnText: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: "#64748B",
+  },
+  periodBtnTextActive: {
+    color: "#FFFFFF",
+  },
+  totalCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 24,
+    borderWidth: 1.5,
+    borderColor: "rgba(14, 165, 233, 0.3)",
+    padding: 24,
+    marginBottom: 20,
+    shadowColor: "#0EA5E9",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 4,
+  },
+  totalCardLabel: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#94A3B8",
+    letterSpacing: 0.5,
+  },
+  totalCardValue: {
+    fontSize: 32,
+    fontWeight: "800",
+    color: "#0EA5E9",
+    marginTop: 4,
+  },
+  totalCardSub: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#059669",
+    marginTop: 8,
+  },
+  grid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "space-between",
+    gap: 12,
+  },
+  gridCard: {
+    width: "48%",
+    backgroundColor: "#FFFFFF",
+    padding: 16,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+    shadowColor: "#64748B",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  gridLabel: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: "#94A3B8",
+    letterSpacing: 0.5,
+  },
+  gridValue: {
+    fontSize: 20,
+    fontWeight: "800",
+    color: "#0F172A",
+    marginTop: 6,
+  },
+  gridValueAmber: {
+    fontSize: 20,
+    fontWeight: "800",
+    color: "#F59E0B",
+    marginTop: 6,
+  },
+});

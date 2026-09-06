@@ -73,8 +73,15 @@ export default function DriverNavigation() {
 
   return (
     <View style={styles.container}>
-      {/* Carte GPS */}
+      {/* Carte GPS + Bouton Retour */}
       <View style={styles.mapContainer}>
+        <TouchableOpacity
+          onPress={() => router.replace("/(driver)/dashboard" as any)}
+          style={styles.floatingBackBtn}
+          activeOpacity={0.8}
+        >
+          <Text style={styles.floatingBackBtnText}>← Dashboard</Text>
+        </TouchableOpacity>
         <Map />
       </View>
 
@@ -155,6 +162,24 @@ const styles = StyleSheet.create({
   },
   mapContainer: {
     flex: 1,
+    position: "relative",
+  },
+  floatingBackBtn: {
+    position: "absolute",
+    top: 40,
+    left: 20,
+    zIndex: 99,
+    backgroundColor: "rgba(15, 23, 42, 0.75)",
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.2)",
+  },
+  floatingBackBtnText: {
+    color: "#FFFFFF",
+    fontSize: 12,
+    fontWeight: "700",
   },
   panel: {
     backgroundColor: "#FFFFFF",

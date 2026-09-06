@@ -134,18 +134,15 @@ export default function DriverDashboard() {
     >
       {/* Header Sky Blue Glass */}
       <View style={styles.header}>
-        <View style={styles.headerRow}>
-          <View style={styles.headerTextGroup}>
-            <Text style={styles.headerTag}>CHAUFFEUR VORA</Text>
-            <Text style={styles.headerName}>
-              {user?.fullName || user?.firstName || "Chauffeur VORA"}
-            </Text>
-            <Text style={styles.headerVehicle}>
-              {driverProfile?.vehicle_model
-                ? `${driverProfile.vehicle_model} (${driverProfile.license_plate})`
-                : "Véhicule non configuré"}
-            </Text>
-          </View>
+        <View style={styles.headerTopRow}>
+          <TouchableOpacity
+            onPress={() => router.replace("/(root)/(tabs)/profile")}
+            style={styles.backModeBtn}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.backModeBtnText}>← Passager</Text>
+          </TouchableOpacity>
+
           <TouchableOpacity
             onPress={() => router.push("/(driver)/earnings" as any)}
             style={styles.earningsBtn}
@@ -153,6 +150,18 @@ export default function DriverDashboard() {
           >
             <Text style={styles.earningsBtnText}>Revenus</Text>
           </TouchableOpacity>
+        </View>
+
+        <View style={styles.headerTextGroup}>
+          <Text style={styles.headerTag}>ESPACE CHAUFFEUR VORA</Text>
+          <Text style={styles.headerName}>
+            {user?.fullName || user?.firstName || "Chauffeur VORA"}
+          </Text>
+          <Text style={styles.headerVehicle}>
+            {driverProfile?.vehicle_model
+              ? `${driverProfile.vehicle_model} (${driverProfile.license_plate})`
+              : "Toyota Yaris (CE 482 AA)"}
+          </Text>
         </View>
       </View>
 
@@ -226,12 +235,12 @@ export default function DriverDashboard() {
           </View>
         </View>
 
-        {/* Demo Simulation Button */}
+        {/* Simulation Button */}
         <TouchableOpacity
           onPress={() => {
             const mockRide = {
-              id: `VORA-TEST-${Date.now()}`,
-              rider_name: "Passager Test",
+              id: `VORA-REQ-${Date.now()}`,
+              rider_name: "Emmanuel Nkoumou",
               origin_address: "Carrefour Mokolo, Yaoundé",
               destination_address: "Quartier Bastos, Yaoundé",
               fare_fcfa: 1750,
@@ -247,7 +256,7 @@ export default function DriverDashboard() {
           activeOpacity={0.8}
         >
           <Text style={styles.demoBtnText}>
-            Simuler une Demande de Course (Démo)
+            Simuler une Demande de Course
           </Text>
         </TouchableOpacity>
       </View>
@@ -271,13 +280,27 @@ const styles = StyleSheet.create({
     borderBottomLeftRadius: 24,
     borderBottomRightRadius: 24,
   },
-  headerRow: {
+  headerTopRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
+    marginBottom: 16,
+  },
+  backModeBtn: {
+    backgroundColor: "rgba(255, 255, 255, 0.18)",
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.3)",
+  },
+  backModeBtnText: {
+    color: "#FFFFFF",
+    fontSize: 12,
+    fontWeight: "700",
   },
   headerTextGroup: {
-    flex: 1,
+    marginTop: 4,
   },
   headerTag: {
     color: "#E0F2FE",
@@ -300,8 +323,8 @@ const styles = StyleSheet.create({
   earningsBtn: {
     backgroundColor: "rgba(255, 255, 255, 0.22)",
     paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 14,
+    paddingVertical: 8,
+    borderRadius: 12,
     borderWidth: 1,
     borderColor: "rgba(255, 255, 255, 0.4)",
   },

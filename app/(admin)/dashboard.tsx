@@ -113,11 +113,21 @@ export default function AdminDashboard() {
         {/* Header */}
         <View style={styles.header}>
           <View style={styles.headerBadgeRow}>
-            <View style={styles.logoBadge}>
-              <Text style={styles.logoText}>VORA</Text>
-            </View>
-            <View style={styles.adminBadge}>
-              <Text style={styles.adminBadgeText}>SUPER ADMIN</Text>
+            <TouchableOpacity
+              style={styles.backAppBtn}
+              onPress={() => router.replace("/(root)/(tabs)/profile")}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.backAppBtnText}>← Retour App</Text>
+            </TouchableOpacity>
+
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+              <View style={styles.logoBadge}>
+                <Text style={styles.logoText}>VORA</Text>
+              </View>
+              <View style={styles.adminBadge}>
+                <Text style={styles.adminBadgeText}>SUPER ADMIN</Text>
+              </View>
             </View>
           </View>
           <Text style={styles.headerTitle}>Administration VORA</Text>
@@ -176,7 +186,7 @@ export default function AdminDashboard() {
                 ]}
               >
                 {isSimulation
-                  ? "SIMULATION ACTIVÉE — Les transactions MTN & Orange Money réussiront automatiquement pour les démonstrations."
+                  ? "SIMULATION ACTIVÉE — Les transactions MTN & Orange Money réussiront automatiquement pour les tests de validation."
                   : "MODE RÉEL — Les transactions feront des requêtes en direct vers l'API CamerPay."}
               </Text>
             </View>
@@ -311,6 +321,19 @@ const styles = StyleSheet.create({
     fontWeight: "500",
     marginTop: 4,
     marginBottom: 20,
+  },
+  backAppBtn: {
+    backgroundColor: "rgba(255, 255, 255, 0.15)",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.25)",
+  },
+  backAppBtnText: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#38BDF8",
   },
   logoutBtn: {
     backgroundColor: "rgba(255,255,255,0.15)",
