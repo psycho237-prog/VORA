@@ -70,7 +70,7 @@ export default function DriverDashboard() {
 
   // Loop d'envoi GPS si EN LIGNE
   useEffect(() => {
-    let interval: NodeJS.Timeout;
+    let interval: ReturnType<typeof setInterval>;
 
     if (isOnline) {
       const sendGPS = async () => {
@@ -102,6 +102,20 @@ export default function DriverDashboard() {
   }, [isOnline, driverProfile]);
 
   const handleToggleOnline = async (value: boolean) => {
+    if (value && driverProfile?.verification_status !== "verified") {
+      Alert.alert(
+        "Vérification Didit Requise",
+        "Vous devez faire vérifier votre identité biométrique avec Didit KYC dans votre profil pour pouvoir passer En Ligne et recevoir des courses.",
+        [
+          { text: "Annuler", style: "cancel" },
+          {
+            text: "Vérifier avec Didit",
+            onPress: () => router.push("/(root)/(tabs)/profile" as any),
+          },
+        ]
+      );
+      return;
+    }
     setIsOnline(value);
     try {
       const backendUrl =
@@ -123,6 +137,8 @@ export default function DriverDashboard() {
 
   const { width } = useWindowDimensions();
   const isWide = width >= 768;
+
+  const isKycVerified = driverProfile?.verification_status === "verified";
 
   return (
     <ScrollView
@@ -166,6 +182,22 @@ export default function DriverDashboard() {
       </View>
 
       <View style={styles.body}>
+        {/* Banner Avertissement Didit KYC si non vérifié */}
+        {!isKycVerified && (
+          <View style={styles.kycWarnCard}>
+            <Text style={styles.kycWarnTitle}>⚠️ Identité non vérifiée (Didit KYC)</Text>
+            <Text style={styles.kycWarnText}>
+              Votre compte n'a pas encore validé la vérification biométrique Didit. Vous devez compléter votre KYC pour passer en ligne.
+            </Text>
+            <TouchableOpacity
+              style={styles.kycWarnBtn}
+              onPress={() => router.push("/(root)/(tabs)/profile" as any)}
+            >
+              <Text style={styles.kycWarnBtnText}>Faire la Vérification Didit →</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
         {/* Toggle statut Online / Offline */}
         <View
           style={[
@@ -447,6 +479,38 @@ const styles = StyleSheet.create({
   demoBtnText: {
     color: "#0284C7",
     fontSize: 14,
+    fontWeight: "800",
+  },
+  kycWarnCard: {
+    backgroundColor: "#FEF2F2",
+    borderRadius: 18,
+    borderWidth: 1.5,
+    borderColor: "#FCA5A5",
+    padding: 16,
+    marginBottom: 20,
+  },
+  kycWarnTitle: {
+    fontSize: 15,
+    fontWeight: "800",
+    color: "#991B1B",
+    marginBottom: 4,
+  },
+  kycWarnText: {
+    fontSize: 13,
+    color: "#B91C1C",
+    lineHeight: 18,
+    marginBottom: 12,
+  },
+  kycWarnBtn: {
+    backgroundColor: "#DC2626",
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderRadius: 12,
+    alignSelf: "flex-start",
+  },
+  kycWarnBtnText: {
+    color: "#FFFFFF",
+    fontSize: 12,
     fontWeight: "800",
   },
 });

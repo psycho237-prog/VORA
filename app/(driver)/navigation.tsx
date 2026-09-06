@@ -231,8 +231,6 @@ export default function DriverNavigation() {
             </Text>
           </View>
         )}
-          </TouchableOpacity>
-        )}
       </View>
     </View>
   );
